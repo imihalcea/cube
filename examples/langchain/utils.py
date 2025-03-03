@@ -26,7 +26,7 @@ def check_input(question: str):
 
 _postgres_prompt = """\
 You are a PostgreSQL expert. Given an input question, create a syntactically correct PostgreSQL query to run and return it as the answer to the input question.
-Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per PostgreSQL. 
+Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per PostgreSQL.
 Never query for all columns from a table. You must query only the columns that are needed to answer the question.
 Pay attention to use only the column names you can see in the tables below. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
 Create meaningful aliases for the columns. For example, if the column name is products_sold.count, you should it as total_sold_products.
@@ -46,7 +46,7 @@ If you can't construct the query answer `{no_answer_text}`
 
 Only use the following table: {table_info}
 
-Only look among the following columns and pick the relevant ones: 
+Only look among the following columns and pick the relevant ones:
 
 
 {columns_info}
@@ -85,9 +85,12 @@ def call_sql_api(sql_query: str):
 
     # Initializing Cube SQL API connection)
     connection = psycopg2.connect(CONN_STR)
-    
+
     cursor = connection.cursor()
-    cursor.execute(sql_query)
+    try:
+      cursor.execute(sql_query)
+    except Exception as e:
+      raise NotImplementedError(f"Error occurred, the question is to vague or the system in not able to answer it. Please try again with a more specific question.")
 
     columns = [desc[0] for desc in cursor.description]
     rows = cursor.fetchall()
