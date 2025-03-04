@@ -14,7 +14,7 @@ def log(message):
     timestamp = current_time.strftime(
         "[%Y-%m-%d %H:%M:%S.{:03d}] ".format(milliseconds)
     )
-    st.text(timestamp + message)
+    st.text(message)
 
 
 def check_input(question: str):
@@ -25,35 +25,69 @@ def check_input(question: str):
 
 
 _postgres_prompt = """\
-You are a PostgreSQL expert. Given an input question, create a syntactically correct PostgreSQL query to run and return it as the answer to the input question.
-Unless the user specifies in the question a specific number of examples to obtain, query for at most {top_k} results using the LIMIT clause as per PostgreSQL.
-Never query for all columns from a table. You must query only the columns that are needed to answer the question.
-Pay attention to use only the column names you can see in the tables below. Be careful to not query for columns that do not exist. Also, pay attention to which column is in which table.
-Create meaningful aliases for the columns. For example, if the column name is products_sold.count, you should it as total_sold_products.
-Note that the columns with (member_type: measure) are numeric columns and the ones with (member_type: dimension) are string columns.
-You should include at least one column with (member_type: measure) in your query.
-There are two types of queries supported against cube tables: aggregated and non-aggregated. Aggregated are those with GROUP BY statement, and non-aggregated are those without. Cube queries issued to your database will always be aggregated, and it doesn't matter if you provide GROUP BY in a query or not.
-Whenever you use a non-aggregated query you need to provide only column names in SQL:
+You are a PostgreSQL expert. Your task is to create a syntactically correct PostgreSQL query that answers the user’s question while strictly following these rules:
 
-SELECT status, count FROM orders
+1. **Allowed Columns Only**
+   Use only the columns explicitly listed under **Columns Info**. Do not reference any columns that are not provided.
 
-The same aggregated query should always aggregate measure columns using a corresponding aggregating function or special MEASURE() function:
+2. **Select Only Necessary Columns**
+   Select only the columns needed to answer the user’s question. Never use `SELECT *`.
 
-SELECT status, SUM(count) FROM orders GROUP BY 1
-SELECT status, MEASURE(count) FROM orders GROUP BY 1
+3. **Always Include at Least One Measure**
+   The columns marked as `(member_type: measure)` are numeric and must appear at least once in your query (either directly in a non-aggregated query or aggregated with a function if needed).
 
-If you can't construct the query answer `{no_answer_text}`
+4. **Handling Aggregation**
+   - **Non-Aggregated Queries**: If the question asks for non-aggregated data, list the needed columns directly (e.g., `SELECT status, count FROM orders`).
+   - **Aggregated Queries**: If the question requires aggregation, use `GROUP BY` along with an appropriate aggregator function or `MEASURE()`. For example:
+     ```sql
+     SELECT status, SUM(count)
+     FROM orders
+     GROUP BY 1
+     ```
 
-Only use the following table: {table_info}
+5. **Row Limits**
+   Unless the user explicitly asks for a specific number of rows, limit your results to `{top_k}` using `LIMIT {top_k}`.
 
-Only look among the following columns and pick the relevant ones:
+6. **Aliases for Clarity**
+   Provide clear, meaningful aliases for columns when needed. For example, use `users.count AS total_users_count` instead of just repeating `count`.
 
+7. **No Valid Query?**
+   If no valid query can be constructed under these rules, return `{no_answer_text}`.
 
-{columns_info}
+8. **Context**
+   - **Table Info**:
+     {table_info}
 
-Question: {input_question}
+   - **Columns Info**:
+     {columns_info}
 
+**Question**:
+{input_question}
 
+---
+
+### Example of How It Works
+
+- **User Question**: “What is the name of the youngest user?”
+- **Answer Approach**:
+  - We need the user’s name (which might be first and/or last name).
+  - We must include a measure column. For instance, `users.count` could be selected to satisfy the “at least one measure” rule.
+  - We do not need all columns—only those required for identifying the user and complying with the measure requirement.
+  - Sort by `users.age` ascending to get the youngest.
+  - Limit results to `{top_k}` unless otherwise specified.
+
+A non-aggregated query (since we only want one user’s name, not grouped data) might look like:
+```sql
+SELECT
+  users.first_name AS user_first_name,
+  users.last_name AS user_last_name,
+  users.count AS total_users_count
+FROM users
+ORDER BY users.age ASC
+LIMIT {top_k};
+```
+
+If no measure column (e.g., `users.count`) exists or if the user’s question cannot be answered with the available columns, you would return `{no_answer_text}`.
 """
 
 PROMPT_POSTFIX = """\

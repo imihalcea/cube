@@ -47,7 +47,7 @@ You can use these sample questions to quickly test the demo --
 * How many completed orders?
 * What are top selling product categories?
 * What product category drives the highest average order value?
-* Quelles sont les villes avec le plus de commandes?
+* Quelles sont les 10 villes avec le plus d'utilisateurs?
 
 '''
 st.markdown(multi)
@@ -79,10 +79,9 @@ if st.button("Submit", type="primary"):
         column_title = column_doc.metadata["column_title"]
         column_name = column_doc.metadata["column_name"]
         column_data_type = column_doc.metadata["column_data_type"]
-        print(column_name)
-        lines.append(
-            f"title: {column_title}, column name: {column_name}, datatype: {column_data_type}, member type: {column_doc.metadata['column_member_type']}"
-        )
+        line = f"title: {column_title}, column name: {column_name}, datatype: {column_data_type}, member type: {column_doc.metadata['column_member_type']}"
+        print(line)
+        lines.append(line)
     columns = "\n\n".join(lines)
 
     # Construct the prompt
@@ -119,6 +118,5 @@ if st.button("Submit", type="primary"):
 
     # Display the result
     df = pd.DataFrame(rows, columns=columns, index=None)
-    df.set_index(columns[0], inplace=True)
+    print(df.to_json())
     st.table(df)
-    st.bar_chart(df)
