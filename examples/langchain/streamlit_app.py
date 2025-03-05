@@ -15,6 +15,8 @@ from utils import (
     log,
     call_sql_api,
     CUBE_SQL_API_PROMPT,
+    TABLE_ANSWER_PROMPT,
+    TEXT_ANSWER_PROMPT,
     _NO_ANSWER_TEXT,
 )
 
@@ -118,5 +120,20 @@ if st.button("Submit", type="primary"):
 
     # Display the result
     df = pd.DataFrame(rows, columns=columns, index=None)
-    print(df.to_json())
-    st.table(df)
+    log("Formulating the answer...")
+    if df.empty:
+        st.warning("No results found.")
+    elif df.shape[0] > 1:
+        prompt = TABLE_ANSWER_PROMPT.format(
+            input_question=question,
+            retrieved_information=df.to_csv(index=False)
+        )
+        llm_answer = llm.invoke(prompt).text()
+        st.markdown(llm_answer)
+    else:
+        prompt = TEXT_ANSWER_PROMPT.format(
+            input_question=question,
+            retrieved_information=df.to_csv(index=False)
+        )
+        llm_answer = llm.invoke(prompt).text()
+        st.markdown(llm_answer)

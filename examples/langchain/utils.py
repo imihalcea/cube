@@ -33,10 +33,8 @@ You are a PostgreSQL expert. Your task is to create a syntactically correct Post
 2. **Select Only Necessary Columns**
    Select only the columns needed to answer the user’s question. Never use `SELECT *`.
 
-3. **Always Include at Least One Measure**
-   The columns marked as `(member_type: measure)` are numeric and must appear at least once in your query (either directly in a non-aggregated query or aggregated with a function if needed).
 
-4. **Handling Aggregation**
+3. **Handling Aggregation**
    - **Non-Aggregated Queries**: If the question asks for non-aggregated data, list the needed columns directly (e.g., `SELECT status, count FROM orders`).
    - **Aggregated Queries**: If the question requires aggregation, use `GROUP BY` along with an appropriate aggregator function or `MEASURE()`. For example:
      ```sql
@@ -45,16 +43,16 @@ You are a PostgreSQL expert. Your task is to create a syntactically correct Post
      GROUP BY 1
      ```
 
-5. **Row Limits**
+4. **Row Limits**
    Unless the user explicitly asks for a specific number of rows, limit your results to `{top_k}` using `LIMIT {top_k}`.
 
-6. **Aliases for Clarity**
+5. **Aliases for Clarity**
    Provide clear, meaningful aliases for columns when needed. For example, use `users.count AS total_users_count` instead of just repeating `count`.
 
-7. **No Valid Query?**
+6. **No Valid Query?**
    If no valid query can be constructed under these rules, return `{no_answer_text}`.
 
-8. **Context**
+7. **Context**
    - **Table Info**:
      {table_info}
 
@@ -89,6 +87,42 @@ LIMIT {top_k};
 
 If no measure column (e.g., `users.count`) exists or if the user’s question cannot be answered with the available columns, you would return `{no_answer_text}`.
 """
+
+_answer_prompt_text = """
+Respond in markdown format to the user's question given the information retrieved from the database.
+Respond with same language as the user's question.
+Respond with same language as the user's question. The user language is French or English.
+
+**User's Question**:
+{input_question}
+
+**Retrieved Information**:
+{retrieved_information}
+"""
+
+_table_answer_prompt = """
+Respond with a table in a markdown format to the user's question given the information retrieved from the database.
+Give meaningful column names and provide the data in a tabular MARKDOWN format.
+Respond with same language as the user's question. The user language is French or English.
+
+**User's Question**:
+{input_question}
+
+**Retrieved Information Data**:
+```csv
+{retrieved_information}
+```
+"""
+
+TEXT_ANSWER_PROMPT = PromptTemplate(
+    input_variables=["input_question", "retrieved_information"],
+    template=_answer_prompt_text,
+)
+
+TABLE_ANSWER_PROMPT = PromptTemplate(
+    input_variables=["input_question", "retrieved_information"],
+    template=_table_answer_prompt,
+)
 
 PROMPT_POSTFIX = """\
 Return the answer as a JSON object with the following format:
