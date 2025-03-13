@@ -8,13 +8,13 @@ from langchain.prompts import PromptTemplate
 from langchain.docstore.document import Document
 
 
-def log(message):
+def log(message, elem):
     current_time = datetime.datetime.now()
     milliseconds = current_time.microsecond // 1000
     timestamp = current_time.strftime(
         "[%Y-%m-%d %H:%M:%S.{:03d}] ".format(milliseconds)
     )
-    st.text(message)
+    elem.text(message)
 
 
 def check_input(question: str):
