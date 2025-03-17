@@ -103,7 +103,7 @@ Respond with same language as the user's question. The user language is French o
 _table_answer_prompt = """
 Respond with a table in a markdown format to the user's question given the information retrieved from the database.
 Give meaningful column names and provide the data in a tabular MARKDOWN format.
-Respond with same language as the user's question. The user language is French or English.
+Respond with same language as the user's question. If the user's question is in French, respond in French. If the user's question is in English, respond in English.
 
 **User's Question**:
 {input_question}

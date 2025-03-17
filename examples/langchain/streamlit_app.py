@@ -38,7 +38,7 @@ if not Path("vectorstore.pkl").exists():
         ingest_cube_meta()
 
 llm = ChatOpenAI(
-    openai_api_key=os.environ.get("OPENAI_API_KEY"), verbose=True, model_name="o1-mini"
+    openai_api_key=os.environ.get("OPENAI_API_KEY"), verbose=True, model_name="gpt-4o-mini"
 )
 st.image("img/logo_akawan_black.svg", caption=None, width=200, use_column_width=None, clamp=False, channels="RGB", output_format="auto", use_container_width=False)
 col1, col2 = st.columns(2)
@@ -51,6 +51,8 @@ You can use these sample questions to quickly test the demo --
 * What are top selling product categories?
 * What product category drives the highest average order value?
 * Quelles sont les 10 villes avec le plus d'utilisateurs?
+* Quel est le nom complet et l'age du plus jeune utilisateur de San Antonio?
+* Combien de commandes ont été livrées en voiture?
 '''
 col1.markdown(multi)
 
